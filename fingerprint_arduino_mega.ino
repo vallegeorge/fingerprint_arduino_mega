@@ -1,5 +1,9 @@
 #include <Adafruit_Fingerprint.h>
 
+/*
+PINO 11 - TX (fio branco)  
+PINO 10 - TX (fio cinza)
+ */
 #include <SoftwareSerial.h>
 SoftwareSerial mySerial(11, 10);
 
@@ -22,7 +26,7 @@ void setup()
   }
 
   finger.getTemplateCount();
-  Serial.print("Sensor possui "); Serial.print(finger.templateCount); Serial.println(" digitais");
+  Serial.print("Sensor possui "); Serial.print(finger.templateCount); Serial.println(" digitais cadastradas.");
   Serial.println("Aguardando por digital válida...");
 }
 
@@ -36,69 +40,64 @@ uint8_t getFingerprintID() {
   uint8_t p = finger.getImage();
   switch (p) {
     case FINGERPRINT_OK:
-      Serial.println("Image taken");
+      Serial.println("Imagem capturada");
       break;
     case FINGERPRINT_NOFINGER:
-      Serial.println("No finger detected");
+      Serial.println("Nenhum dedo detectado");
       return p;
     case FINGERPRINT_PACKETRECIEVEERR:
-      Serial.println("Communication error");
+      Serial.println("Erro de comunicação");
       return p;
     case FINGERPRINT_IMAGEFAIL:
-      Serial.println("Imaging error");
+      Serial.println("Erro de imagem");
       return p;
     default:
-      Serial.println("Unknown error");
+      Serial.println("Erro desconhecido");
       return p;
   }
-
-  // OK success!
 
   p = finger.image2Tz();
   switch (p) {
     case FINGERPRINT_OK:
-      Serial.println("Image converted");
+      Serial.println("Imagem convertida");
       break;
     case FINGERPRINT_IMAGEMESS:
-      Serial.println("Image too messy");
+      Serial.println("Imagem bagunçada");
       return p;
     case FINGERPRINT_PACKETRECIEVEERR:
-      Serial.println("Communication error");
+      Serial.println("Erro de comunicação");
       return p;
     case FINGERPRINT_FEATUREFAIL:
-      Serial.println("Could not find fingerprint features");
+      Serial.println("Não foi possível encontrar os recursos de impressão digital");
       return p;
     case FINGERPRINT_INVALIDIMAGE:
-      Serial.println("Could not find fingerprint features");
+      Serial.println("Imagem inválida");
       return p;
     default:
-      Serial.println("Unknown error");
+      Serial.println("Erro desconhecido");
       return p;
   }
   
-  // OK converted!
   p = finger.fingerFastSearch();
   if (p == FINGERPRINT_OK) {
-    Serial.println("Found a print match!");
+    Serial.println("Encontrada uma imagem correspondente!");
   } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
-    Serial.println("Communication error");
+    Serial.println("Erro de comunicação");
     return p;
   } else if (p == FINGERPRINT_NOTFOUND) {
-    Serial.println("Did not find a match");
+    Serial.println("Nenhuma imagem correspondente");
     return p;
   } else {
-    Serial.println("Unknown error");
+    Serial.println("Erro desconhecido");
     return p;
   }   
   
-  // found a match!
-  Serial.print("Found ID #"); Serial.print(finger.fingerID); 
-  Serial.print(" with confidence of "); Serial.println(finger.confidence); 
+  Serial.print("Encontrado ID #"); Serial.print(finger.fingerID); 
+  Serial.print(" com a confiança de "); Serial.println(finger.confidence); 
 
   return finger.fingerID;
 }
 
-// returns -1 if failed, otherwise returns ID #
 int getFingerprintIDez() {
   uint8_t p = finger.getImage();
   if (p != FINGERPRINT_OK)  return -1;
@@ -109,8 +108,7 @@ int getFingerprintIDez() {
   p = finger.fingerFastSearch();
   if (p != FINGERPRINT_OK)  return -1;
   
-  // found a match!
-  Serial.print("Found ID #"); Serial.print(finger.fingerID); 
-  Serial.print(" with confidence of "); Serial.println(finger.confidence);
+  Serial.print("Encontrado ID #"); Serial.print(finger.fingerID); 
+  Serial.print(" com a confiança de "); Serial.println(finger.confidence);
   return finger.fingerID; 
 }
