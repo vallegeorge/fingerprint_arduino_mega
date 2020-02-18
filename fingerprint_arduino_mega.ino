@@ -27,6 +27,7 @@ void setup()
 
   finger.getTemplateCount();
   Serial.print("Sensor possui "); Serial.print(finger.templateCount); Serial.println(" digitais cadastradas.");
+  downloadFingerprintTemplate(1);
   Serial.println("Aguardando por digital válida...");
 }
 
@@ -110,5 +111,83 @@ int getFingerprintIDez() {
   
   Serial.print("Encontrado ID #"); Serial.print(finger.fingerID); 
   Serial.print(" com a confiança de "); Serial.println(finger.confidence);
+  
   return finger.fingerID; 
+}
+
+uint8_t downloadFingerprintTemplate(uint16_t id)
+{
+  Serial.println("------------------------------------");
+  Serial.print("Attempting to load #"); Serial.println(id);
+  uint8_t p = finger.loadModel(id);
+  switch (p) {
+    case FINGERPRINT_OK:
+      Serial.print("Template "); Serial.print(id); Serial.println(" loaded");
+      break;
+    case FINGERPRINT_PACKETRECIEVEERR:
+      Serial.println("Communication error");
+      return p;
+    default:
+      Serial.print("Unknown error "); Serial.println(p);
+      return p;
+  }
+
+  // OK success!
+
+  Serial.print("Attempting to get #"); Serial.println(id);
+  p = finger.getModel();
+  switch (p) {
+    case FINGERPRINT_OK:
+      Serial.print("Template "); Serial.print(id); Serial.println(" transferring:");
+      break;
+   default:
+      Serial.print("Unknown error "); Serial.println(p);
+      return p;
+  }
+  
+  // one data packet is 267 bytes. in one data packet, 11 bytes are 'usesless' :D
+  uint8_t bytesReceived[534]; // 2 data packets
+  memset(bytesReceived, 0xff, 534);
+
+  uint32_t starttime = millis();
+  int i = 0;
+  while (i < 534 && (millis() - starttime) < 20000) {
+      if (mySerial.available()) {
+          bytesReceived[i++] = mySerial.read();
+      }
+  }
+  Serial.print(i); Serial.println(" bytes read.");
+  Serial.println("Decoding packet...");
+
+  uint8_t fingerTemplate[512]; // the real template
+  memset(fingerTemplate, 0xff, 512);
+
+  // filtering only the data packets
+  int uindx = 9, index = 0;
+  while (index < 534) {
+      while (index < uindx) ++index;
+      uindx += 256;
+      while (index < uindx) {
+          fingerTemplate[index++] = bytesReceived[index];
+      }
+      uindx += 2;
+      while (index < uindx) ++index;
+      uindx = index + 9;
+  }
+  for (int i = 0; i < 512; ++i) {
+      Serial.print("0x");
+      printHex(fingerTemplate[i], 2);
+      Serial.print(", ");
+  }
+  Serial.println("\ndone.");
+}
+
+void printHex(int num, int precision) {
+    char tmp[16];
+    char format[128];
+ 
+    sprintf(format, "%%.%dX", precision);
+ 
+    sprintf(tmp, format, num);
+    Serial.print(tmp);
 }
